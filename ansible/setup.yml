@@ -1,0 +1,52 @@
+---
+- name: Setup
+  hosts: 127.0.0.1
+  connection: local
+  become: true
+
+  tasks:
+
+  - name: Install Nginx
+    yum:
+      name: nginx
+      state: present
+
+  - name: Start Nginx
+    service:
+      name: nginx
+      state: started
+          
+  - name: Start and enable the Nginx daemon
+    service: name=nginx state=started enabled=yes
+
+  - name: Iptables - Allow port 80/H
+    iptables:
+      chain: INPUT
+      destination_port: 80
+      jump: ACCEPT
+      protocol: tcp
+
+  - name: Disable SELinux
+    selinux:
+      state: disabled
+
+
+  - name: Install pre-requisite packages Docker
+    yum:
+      name: "{{item}}"
+      state: latest
+    loop:
+      - yum-utils
+      - device-mapper-persistent-data
+      - lvm2
+
+  - name: Add Docker CE repo
+    get_url:
+      url: https://download.docker.com/linux/centos/docker-ce.repo
+      dest: /etc/yum.repos.d/docker-ce.repo
+
+  - name: Install Docker
+    yum: name=docker state=latest
+
+  - name: Start and enable the Docker daemon
+    service: name=docker state=started enabled=yes
